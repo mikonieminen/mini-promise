@@ -45,7 +45,7 @@
         }
     };
 
-    Promise.prototype.onError = function() {
+    Promise.prototype.onError = function(err) {
         var i = 0;
         var length = this.listeners.error.length;
         var func;
