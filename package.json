@@ -1,0 +1,9 @@
+{
+    "name": "mini-promise",
+    "description": "This is fairly simple promise implementation for node.js and browsers.",
+    "version": "0.0.1",
+    "author": "Miko Nieminen <miko.nieminen@iki.fi>",
+    "keywords": ["promise asynchronous"],
+    "main": "mini-promise.js",
+    "engines": { "node": ">= 0.6.x" }
+}
