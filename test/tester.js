@@ -40,8 +40,8 @@
         console.log("Tester run: " + this.name);
         var p;
 
-        if (this.forceAsync) {
-            p = new promise.Promise(true, this.payload);
+        if (this.forceAsync === true) {
+            p = new promise.Promise({async: true}, this.payload);
         } else {
             p = new promise.Promise(this.payload);
         }

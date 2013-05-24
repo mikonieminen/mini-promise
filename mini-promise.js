@@ -81,18 +81,24 @@
      */
 
     /**
+     * @typedef PromiseProperties
+     * @type {object}
+     * @param {boolean} [async=false] Force payload execution happen asynchronously, by default not.
+     */
+
+    /**
      * Simple promise/future implementation.
      *
      * @name module:mini-promise.Promise
      *
      * @constructor
      *
-     * @param {boolean} [forceAsync=false] Should we force payload exection to
-     * happen asynchronously true=yes, false=no.
+     * @param {PromiseProperties} [properties] Properties object that can configure behaviour of
+     * the Promise.
      * @param {module:mini-promise.Promise~payloadFunction} payload Function to execute.
      */
-    function Promise(forceAsync, payload) {
-        this.forceAsync = false;
+    function Promise(properties, payload) {
+        this.runAsync = false;
         this.payload = null;
         this.completed = false;
 
@@ -107,10 +113,12 @@
             data: null
         };
 
-        if (typeof forceAsync === "function" && payload === undefined) {
-            this.payload = forceAsync;
-        } else if (typeof forceAsync === "boolean" && typeof payload === "function") {
-            this.forceAsync = forceAsync;
+        if (typeof properties === "function" && payload === undefined) {
+            this.payload = properties;
+        } else if (typeof properties === "object" && typeof payload === "function") {
+            if (properties.async === true) {
+                this.runAsync = properties.async
+            }
             this.payload = payload;
         } else {
             throw new Error("Incorrect parameters for creating promise");
@@ -211,7 +219,7 @@
      */
     Promise.prototype.run = function(readyCb, errorCb, abortCb) {
         var self = this;
-        if (this.forceAsync) {
+        if (this.runAsync) {
             setTimeout(function() {
                 self.payload(readyCb, errorCb, abortCb);
             }, 0);
