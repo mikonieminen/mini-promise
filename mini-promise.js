@@ -35,13 +35,14 @@
         var length = this.listeners.ready.length;
         var func;
 
-        this.completed = true;
-        this.result.event = "ready";
-        this.result.data = arguments;
-
-        for (i = 0; i < length; ++i) {
-            func = this.listeners.ready.shift();
-            func.apply(undefined, arguments);
+        if (!this.completed) {
+            this.completed = true;
+            this.result.event = "ready";
+            this.result.data = arguments;
+            for (i = 0; i < length; ++i) {
+                func = this.listeners.ready.shift();
+                func.apply(undefined, arguments);
+            }
         }
     };
 
@@ -50,13 +51,14 @@
         var length = this.listeners.error.length;
         var func;
 
-        this.completed = true;
-        this.result.event = "error";
-        this.result.data = err;
-
-        for (i = 0; i < length; ++i) {
-            func = this.listeners.error.shift();
-            func.apply(undefined, arguments);
+        if (!this.completed) {
+            this.completed = true;
+            this.result.event = "error";
+            this.result.data = err;
+            for (i = 0; i < length; ++i) {
+                func = this.listeners.error.shift();
+                func.apply(undefined, arguments);
+            }
         }
     };
 
@@ -65,13 +67,14 @@
         var length = this.listeners.abort.length;
         var func;
 
-        this.completed = true;
-        this.result.event = "abort";
-        this.result.data = reason;
-
-        for (i = 0; i < length; ++i) {
-            func = this.listeners.abort.shift();
-            func.apply(undefined, arguments);
+        if (!this.completed) {
+            this.completed = true;
+            this.result.event = "abort";
+            this.result.data = reason;
+            for (i = 0; i < length; ++i) {
+                func = this.listeners.abort.shift();
+                func.apply(undefined, arguments);
+            }
         }
     };
 
@@ -95,6 +98,7 @@
         } else if (this.result.event === event) {
             callback.apply(undefined, this.result.data);
         }
+        return this;
     };
 
     Promise.prototype.ready = function(callback) {
@@ -103,6 +107,7 @@
         } else if (this.result.event === "ready") {
             callback.apply(undefined, this.result.data);
         }
+        return this;
     };
 
     Promise.prototype.error = function(callback) {
@@ -111,6 +116,7 @@
         } else if (this.result.event === "error") {
             callback.apply(undefined, this.result.data);
         }
+        return this;
     };
 
     Promise.prototype.abort = function(callback) {
@@ -119,6 +125,7 @@
         } else if (this.result.event === "abort") {
             callback.apply(undefined, this.result.data);
         }
+        return this;
     };
 
     module.exports = {
