@@ -35,6 +35,7 @@
  * });
  */
 (function(module) {
+    "use strict"
 
     /**
      * Callback to notify that Promise succeed.
