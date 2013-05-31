@@ -1,5 +1,5 @@
 (function() {
-    var promise = require("../mini-promise.js");
+    var promise = require("../mini_promise.js");
 
     function Tester(name, async, payload) {
         this.name = name;
