@@ -99,9 +99,15 @@
      * @param {module:mini-promise.Promise~payloadFunction} payload Function to execute.
      */
     function Promise(properties, payload) {
-        this.runAsync = false;
+        var self = this;
+
         this.payload = null;
         this.completed = false;
+
+        this.properties =  {
+            async: false,
+            run: true
+        };
 
         this.listeners = {
             ready: [],
@@ -117,17 +123,23 @@
         if (typeof properties === "function" && payload === undefined) {
             this.payload = properties;
         } else if (typeof properties === "object" && typeof payload === "function") {
-            if (properties.async === true) {
-                this.runAsync = properties.async
-            }
             this.payload = payload;
+            for (var prop in properties) {
+                this.properties[prop] = properties[prop];
+            }
         } else {
             throw new Error("Incorrect parameters for creating promise");
         }
 
-        this.run(Promise.prototype.onReady.bind(this),
-                 Promise.prototype.onError.bind(this),
-                 Promise.prototype.onAbort.bind(this));
+        if (this.properties.run) {
+            if (this.properties.async) {
+                setTimeout(function() {
+                    self.run();
+                }, 0);
+            } else {
+                this.run();
+            }
+        }
     }
 
     /**
@@ -214,19 +226,9 @@
      * @private
      * @method
      *
-     * @param {module:mini-promise.Promise~payloadReadyCb} readyCb callback when exucution succeed.
-     * @param {module:mini-promise.Promise~payloadErrorCb} errorCb callback when exucution failed.
-     * @param {module:mini-promise.Promise~payloadAbortCb} abortCb callback when execution was aborted.
      */
-    Promise.prototype.run = function(readyCb, errorCb, abortCb) {
-        var self = this;
-        if (this.runAsync) {
-            setTimeout(function() {
-                self.payload(readyCb, errorCb, abortCb);
-            }, 0);
-        } else {
-            this.payload(readyCb, errorCb, abortCb);
-        }
+    Promise.prototype.run = function() {
+        this.payload(this.onReady.bind(this), this.onError.bind(this), this.onAbort.bind(this));
     };
 
     /**
@@ -279,12 +281,7 @@
      * @returns {module:mini-promise.Promise} Returns promise it self so that on, ready, error and abort can be chained;
      */
     Promise.prototype.ready = function(callback) {
-        if (!this.completed) {
-            this.listeners.ready.push(callback);
-        } else if (this.result.event === "ready") {
-            callback.apply(undefined, this.result.data);
-        }
-        return this;
+        return this.on("ready", callback);
     };
 
     /**
@@ -310,12 +307,7 @@
      * @returns {module:mini-promise.Promise} Returns promise it self so that on, ready, error and abort can be chained;
      */
     Promise.prototype.error = function(callback) {
-        if (!this.completed) {
-            this.listeners.error.push(callback);
-        } else if (this.result.event === "error") {
-            callback.apply(undefined, this.result.data);
-        }
-        return this;
+        return this.on("error", callback);
     };
 
     /**
@@ -341,12 +333,7 @@
      * @returns {module:mini-promise.Promise} Returns promise it self so that on, ready, error and abort can be chained;
      */
     Promise.prototype.abort = function(callback) {
-        if (!this.completed) {
-            this.listeners.abort.push(callback);
-        } else if (this.result.event === "abort") {
-            callback.apply(undefined, this.result.data);
-        }
-        return this;
+        return this.on("abort", callback);
     };
 
     module.exports = {
