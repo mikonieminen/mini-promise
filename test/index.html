@@ -1,13 +1,25 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Promise test</title>
+    <title>Promise tests</title>
     <meta charset="utf-8">
+
+    <link href="/mocha.css" type="text/css" rel="stylesheet">
+    <script src="/mocha.js" type="text/javascript" onload="mocha.setup('bdd');"></script>
+
     <script src="../../mini-module/mini-module.js" type="text/javascript"></script>
     <script src="../mini-promise.js" type="text/javascript" data-module-name="mini-promise"></script>
-    <script src="tester.js" type="text/javascript"></script>
+    <script src="./tests.js" type="text/javascript"></script>
   </head>
   <body>
-    <h1>Testing promise</h1>
+    <div id="mocha"></div>
+    <script type="text/javascript">
+      document.addEventListener('readystatechange', function(event) {
+          // expect all scripts loaded when ready state is complete
+          if (document.readyState === "complete") {
+              mocha.run();
+          }
+      });
+    </script>
   </body>
 </html>
