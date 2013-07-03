@@ -160,10 +160,13 @@
         if (!this.completed) {
             this.completed = true;
             this.result.event = "ready";
-            this.result.data = arguments;
+            this.result.data = [];
+            for(i = 0; i < arguments.length; ++i) {
+                this.result.data.push(arguments[i]);
+            }
             for (i = 0; i < length; ++i) {
                 func = this.listeners.ready.shift();
-                func.apply(undefined, arguments);
+                func.apply(undefined, this.result.data);
             }
         }
     };
@@ -189,7 +192,7 @@
             this.result.data = err;
             for (i = 0; i < length; ++i) {
                 func = this.listeners.error.shift();
-                func.apply(undefined, arguments);
+                func.call(undefined, this.result.data);
             }
         }
     };
@@ -215,7 +218,7 @@
             this.result.data = reason;
             for (i = 0; i < length; ++i) {
                 func = this.listeners.abort.shift();
-                func.apply(undefined, arguments);
+                func.call(undefined, this.result.data);
             }
         }
     };
@@ -336,8 +339,231 @@
         return this.on("abort", callback);
     };
 
+    function Step(payload) {
+        console.assert(payload instanceof Function, "Expecting function, but argument is " + (typeof payload));
+        this.payload = null;
+        this.p = null;
+
+        this.payload = payload;
+    }
+
+    function Sequence() {
+        this.steps = [];
+
+        var i = 0;
+        var options = {};
+
+        if (! (arguments[0] instanceof Function)) {
+            options = arguments[0];
+            i = 1;
+        }
+
+        options.run = false;
+
+        Promise.prototype.constructor.call(this, options, this.stepper);
+
+        this.listeners.progress = [];
+
+        for(;i < arguments.length; ++i) {
+            this.steps.push(new Step(arguments[i]));
+        }
+
+        if (this.steps.length === 0) {
+            throw new Error("No steps defined for Sequence.");
+        }
+
+        this.run();
+    }
+
+    Sequence.prototype.__proto__ = Promise.prototype;
+
+    Sequence.prototype.stepper = function(ready, error, abort) {
+        var self = this;
+        var s = 0;
+
+        function stepReady() {
+            var i = 0;
+            var length = 0;
+            var func = null;
+            var progressData = [];
+            var data = [];
+            var stepIndex = 0;
+            for (stepIndex = 0; stepIndex < self.steps.length; ++stepIndex) {
+                if (this === self.steps[stepIndex]) {
+                    break;
+                }
+            }
+
+            progressData.push(stepIndex);
+            for (i = 0; i < arguments.length; ++i) {
+                progressData.push(arguments[i]);
+            }
+
+            if (!self.completed) {
+                length = self.listeners.progress.length;
+                for (i = 0; i < length; ++i) {
+                    func = self.listeners.progress[i];
+                    func.apply(undefined, progressData);
+                }
+                if (s < self.steps.length) {
+                    runStep(self.steps[s]);
+                } else {
+                    length = self.steps.length;
+                    for (i = 0; i < length; ++i) {
+                        data.push(self.steps[i].p.result.data);
+                    }
+                    self.onReady.apply(self, data);
+                }
+            }
+        }
+
+        function stepAbort(message) {
+            abort(message);
+        };
+
+        function stepError(err) {
+            error(err);
+        };
+
+        function runStep(step) {
+            console.assert(step instanceof Step, "Received step is not instance of Step.");
+            ++s;
+            step.p = new Promise({async: true}, step.payload);
+            step.p.ready(stepReady.bind(step)).error(stepError.bind(step)).abort(stepAbort.bind(step));
+        }
+
+        runStep(this.steps[s]);
+    };
+
+
+    function Parallel() {
+        this.steps = [];
+
+        var i = 0;
+        var options = {};
+
+        if (! (arguments[0] instanceof Function)) {
+            options = arguments[0];
+            i = 1;
+        }
+
+        options.run = false;
+
+        Promise.prototype.constructor.call(this, options, this.stepper);
+
+        this.listeners.progress = [];
+
+        for(;i < arguments.length; ++i) {
+            this.steps.push(new Step(arguments[i]));
+        }
+
+        if (this.steps.length === 0) {
+            throw new Error("No steps defined for Parallel.");
+        }
+
+        this.run();
+    }
+
+    Parallel.prototype.__proto__ = Promise.prototype;
+
+    Parallel.prototype.stepper = function(ready, error, abort) {
+        var self = this;
+        var pending = 0;
+
+        function stepDone() {
+            var i = 0;
+            var length = 0;
+            var event = "ready";
+            var data = [];
+
+            if (pending > 0) {
+                --pending;
+
+                if (pending === 0) {
+                    length = self.steps.length;
+                    for (i = 0; i < length; ++i) {
+                        if (self.steps[i].p.result.event == "abort") {
+                            if (event == "ready") {
+                                event = "abort";
+                                data = [];
+                                data.push(self.steps[i].p.result.data);
+                            } else if ( event == "abort") {
+                                data.push(self.steps[i].p.result.data);
+                            }
+                        } else if (self.steps[i].p.result.event == "error") {
+                            if (event != "error") {
+                                event = "error";
+                                data = [];
+                                data.push(self.steps[i].p.result.data);
+                            } else if (event == "error") {
+                                data.push(self.steps[i].p.result.data);
+                            }
+                        } else {
+                            if (event == "ready") {
+                                data.push(self.steps[i].p.result.data);
+                            }
+                        }
+                    }
+                    if (event == "abort") {
+                        abort.apply(self, data);
+                    } else if (event == "error") {
+                        error.apply(self, data);
+                    } else {
+                        ready.apply(self, data);
+                    }
+                }
+            } else {
+                error(new Error("Got step done when there are no pending steps."));
+            }
+        }
+
+        function stepReady() {
+            var data = [];
+            var i = 0;
+            var length = 0;
+            var func = null;
+            var stepIndex = 0;
+            for (stepIndex = 0; stepIndex < self.steps.length; ++stepIndex) {
+                if (this === self.steps[stepIndex]) {
+                    break;
+                }
+            }
+            data.push(stepIndex);
+            for (i = 0; i < arguments.length; ++i) {
+                data.push(arguments[i]);
+            }
+            length = self.listeners.progress.length;
+            for (i = 0; i < length; ++i) {
+                func = self.listeners.progress[i];
+                func.apply(undefined, data);
+            }
+            stepDone.apply(this, data);
+        };
+
+        function stepAbort(message) {
+            stepDone("abort", message);
+        };
+
+        function stepError(err) {
+            stepDone("error", err);
+        };
+
+        function runStep(step) {
+            console.assert(step instanceof Step, "Received step is not instance of Step.");
+            step.p = new Promise({async: true}, step.payload);
+            step.p.ready(stepReady.bind(step)).error(stepError.bind(step)).abort(stepAbort.bind(step));
+        }
+
+        pending = this.steps.length;
+        this.steps.forEach(function(step) {
+            runStep(step);
+        });
+    };
+
     module.exports = {
-        Promise: Promise
+        Promise: Promise,
+        Sequence: Sequence,
+        Parallel: Parallel
     };
 
 })(typeof module !== "undefined" ? module : null);

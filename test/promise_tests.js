@@ -9,7 +9,7 @@
         return true;
     };
 
-    describe("Test Promise", function() {
+    describe("Promise Tests", function() {
         var Promise = require("../mini-promise.js").Promise;
 
         it("Test synchronous payload", function(done) {
