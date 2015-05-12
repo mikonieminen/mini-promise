@@ -116,17 +116,11 @@
         if (payload instanceof Function) {
             try  {
                 var ret = payload(Promise.prototype.resolve.bind(this), Promise.prototype.reject.bind(this));
-                if (ret !== undefined && this.state === State.PENDING) {
-                    this.state = State.FULFILLED;
-                    this.done = true;
-                    this.value = ret;
+                if (ret !== undefined) {
+                    resolve(this, ret);
                 }
             } catch (e) {
-                if (this.state === State.PENDING) {
-                    this.state = State.REJECTED;
-                    this.done = true;
-                    this.value = e;
-                }
+                reject(this, e);
             }
         } else if (payload !== undefined) {
             resolve(this, payload);
