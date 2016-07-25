@@ -16,7 +16,7 @@
             promise.state = State.REJECTED;
             promise.value = new TypeError("Resolving promise with it self is not allowed");
             purgeWaiting(promise);
-        } else if (x instanceof Promise) { // 2.3.2
+        } else if (x instanceof PolyfilPromise) { // 2.3.2
             x.then(function (value) { // 2.3.2.2
                 resolve(promise, value);
             }, function (reason) { // 2.3.2.3
@@ -108,27 +108,31 @@
         }
     }
 
-    function Promise(payload) {
+    function PolyfilPromise(payload) {
         this.done = false;
         this.state = State.PENDING;
         this.value = null;
         this.pending = [];
         if (payload instanceof Function) {
             try  {
-                var ret = payload(Promise.prototype.resolve.bind(this), Promise.prototype.reject.bind(this));
+                var ret = payload(PolyfilPromise.prototype.resolve.bind(this), PolyfilPromise.prototype.reject.bind(this));
                 if (ret !== undefined) {
+                    // FIXME: raise error if used
+                    // this is not supported by native Promises
                     resolve(this, ret);
                 }
             } catch (e) {
                 reject(this, e);
             }
         } else if (payload !== undefined) {
+            // FIXME: raise error if used
+            // this is not supported by native Promises
             resolve(this, payload);
         }
     }
 
-    Promise.prototype.then = function (onFulfilled, onRejected) {
-        var promise = new Promise();
+    PolyfilPromise.prototype.then = function (onFulfilled, onRejected) {
+        var promise = new PolyfilPromise();
 
         var obj = {
             f: (typeof onFulfilled === "function") ? onFulfilled : null, // 2.2.1.1
@@ -145,46 +149,50 @@
         return promise; // 2.2.7
     };
 
-    Promise.prototype.catch = function (onRejected) {
+    PolyfilPromise.prototype.catch = function (onRejected) {
         return this.then(null, onRejected);
     };
 
-    Promise.prototype.resolve = function (value) {
+    PolyfilPromise.prototype.resolve = function (value) {
+        // FIXME: raise error if used
+        // this is not supported by native Promises
         resolve(this, value);
     };
 
-    Promise.prototype.reject = function (value) {
+    PolyfilPromise.prototype.reject = function (value) {
+        // FIXME: raise error if used
+        // this is not supported by native Promises
         reject(this, value);
     };
 
-    Promise.cast = function (obj) {
-        if (obj instanceof Promise) {
+    PolyfilPromise.cast = function (obj) {
+        if (obj instanceof PolyfilPromise) {
             return obj;
         } else {
-            return new Promise(function (resolve, reject) {
+            return new PolyfilPromise(function (resolve, reject) {
                 resolve(obj);
             });
         }
     };
 
-    Promise.resolve = function (value) {
-        return new Promise(function (resolve, reject) {
+    PolyfilPromise.resolve = function (value) {
+        return new PolyfilPromise(function (resolve, reject) {
             resolve(value);
         });
     };
 
-    Promise.reject = function (reason) {
-        return new Promise(function (resolve, reject) {
+    PolyfilPromise.reject = function (reason) {
+        return new PolyfilPromise(function (resolve, reject) {
             reject(reason);
         });
     };
 
-    Promise.all = function (promises) {
-        return new Promise(function (resolve, reject) {
+    PolyfilPromise.all = function (promises) {
+        return new PolyfilPromise(function (resolve, reject) {
             var values = [];
             var done = 0;
             for (var i = 0; i < promises.length; ++i) {
-                Promise.cast(promises[i]).then((function (n, value) {
+                PolyfilPromise.cast(promises[i]).then((function (n, value) {
                     values[n] = value;
                     if (++done === promises.length) {
                         resolve(values);
@@ -196,10 +204,10 @@
         });
     };
 
-    Promise.race = function (promises) {
-        return new Promise(function (resolve, reject) {
+    PolyfilPromise.race = function (promises) {
+        return new PolyfilPromise(function (resolve, reject) {
             for (var i = 0; i < promises.length; ++i) {
-                Promise.cast(promises[i]).then((function (n, value) {
+                PolyfilPromise.cast(promises[i]).then((function (n, value) {
                     resolve(value);
                 }).bind(undefined, i), function (reason) {
                     reject(reason);
@@ -208,6 +216,11 @@
         });
     };
 
-    exports.Promise = Promise;
+    // This does not work in Chrome, Firefox or Node.js
+    // Based on my tests, each of these fail the test suite's
+    // test cases where Promise is resolved by returning
+    // value synchronously.
+    // exports.Promise = Promise ? Promise : PolyfilPromise;
+    exports.Promise = PolyfilPromise;
 
 })(typeof exports !== undefined ? exports : this);
