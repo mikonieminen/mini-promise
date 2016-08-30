@@ -1,7 +1,7 @@
 {
     "name": "mini-promise-aplus",
     "description": "This is basic Promises/A+ implementation node.js and browsers based on mini-modules.",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "author": "Miko Nieminen <miko.nieminen@iki.fi>",
     "keywords": ["promises", "Promises/A+", "promises-aplus", "asynchronous"],
     "main": "mini-promise.js",
