@@ -22,14 +22,10 @@
                 };
             },
             resolved: function (value) {
-                var p = new Promise(value);
-                p.resolve(value);
-                return p;
+                return Promise.resolve(value);
             },
             rejected: function (reason) {
-                var p = new Promise();
-                p.reject(reason);
-                return p;
+                return Promise.reject(reason);
             }
         };
 
