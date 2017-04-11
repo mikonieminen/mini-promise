@@ -75,22 +75,6 @@
     describe('Promise.all', function () {
         describe('getting fulfilled', function () {
             var sentinel = { sentinel: "sentinel" };
-            it('single promise returning value synchronously', function (done){
-                var p = Promise.all([
-                    new Promise(function (resolve, reject) {
-                        return sentinel;
-                    })
-                ]);
-                p.then(function (value) {
-                    if (value instanceof Array && value.length === 1 && value[0] === sentinel) {
-                        done();
-                    } else {
-                        done(new Error("Promise resolved with unexpected value: ", value));
-                    }
-                }, function (reason) {
-                    done(reason);
-                });
-            });
             it('three promises resolving value asynchronously', function (done){
                 var p = Promise.all([
                     new Promise(function (resolve, reject) {
@@ -216,22 +200,6 @@
         describe('getting fulfilled', function (){
             var dummy = { dummy: "dummy" };
             var sentinel = { sentinel: "sentinel" };
-            it('single promise returning value synchronously', function (done){
-                var p = Promise.race([
-                    new Promise(function (resolve, reject) {
-                        return sentinel;
-                    })
-                ]);
-                p.then(function (value) {
-                    if (value === sentinel) {
-                        done();
-                    } else {
-                        done(new Error("Promise resolved with unexpected value: ", value));
-                    }
-                }, function (reason) {
-                    done(reason);
-                });
-            });
             it('three promises resolving value asynchronously', function (done){
                 var p = Promise.race([
                     new Promise(function (resolve, reject) {

@@ -115,12 +115,7 @@
         this.pending = [];
         if (payload instanceof Function) {
             try  {
-                var ret = payload(PolyfilPromise.prototype.resolve.bind(this), PolyfilPromise.prototype.reject.bind(this));
-                if (ret !== undefined) {
-                    // FIXME: raise error if used
-                    // this is not supported by native Promises
-                    resolve(this, ret);
-                }
+                payload(PolyfilPromise.prototype.resolve.bind(this), PolyfilPromise.prototype.reject.bind(this));
             } catch (e) {
                 reject(this, e);
             }
