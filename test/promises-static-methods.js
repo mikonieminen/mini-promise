@@ -1,7 +1,7 @@
 ;(function () {
     var Promise = require('../mini-promise.js').Promise;
 
-    describe('Promise.cast', function () {
+    xdescribe('Promise.cast', function () {
         it('actual Promise', function (done) {
             var dummy = { dummy: "dummy" };
             var sentinel = new Promise(function (resolve, reject) {
